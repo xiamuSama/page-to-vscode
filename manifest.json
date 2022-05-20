@@ -1,0 +1,32 @@
+{
+    "name": "vscodeTool",
+    "description": "help you to open vscode",
+    "version": "0.0.1",
+    "manifest_version": 3,
+    "action": {
+        "default_title": "vscode tool",
+        "default_icon": "public/icon.png",
+        "default_popup": "dist/index.html"
+    },
+    "icons": { 
+        "16": "public/icon.png",
+        "48": "public/icon.png",
+       "128": "public/icon.png" 
+    },
+    "permissions": [
+        "contextMenus",
+        "storage",
+        "tabs"
+    ],
+    "background": {
+        "service_worker": "background.js",
+        "type": "module"
+    },
+    "content_scripts": [
+        {
+          "matches": ["<all_urls>"],
+          "js": [ "extra/jquery-1.12.4.js","contentScript.js"],
+          "run_at": "document_start"
+        }
+    ]
+}
