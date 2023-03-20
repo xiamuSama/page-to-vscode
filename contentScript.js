@@ -1,15 +1,20 @@
 let insert = false;
 
+chrome.runtime.sendMessage({ type: "init"}, (response) => {
+    // console.log('background收到了消息的回调');
+});
+
 chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
-      console.log(sender.tab ?
-                  "from a content script:" + sender.tab.url :
-                  "from the extension");
+    //   console.log(sender.tab ?
+    //               "from a content script:" + sender.tab.url :
+    //               "from the extension");
 
-      console.log('request', request, sender);
+    //   console.log('request', request, sender);
       // 从popup.html 来的消息
       if (request.type === 'open_from_swtich') {
-          request.vscodeSwtich ? insertNodes() : removeNodes()
+          request.vscodeSwtich ? insertHelperIcon() : removeHelperIcon();
+          
       }
       // 从backgroud来的消息
       if (request.type === "open_from_menu") {
@@ -20,43 +25,100 @@ chrome.runtime.onMessage.addListener(
     }
   );
 
-  function insertNodes(){
-    if (insert) return;
-    let nodes = document.querySelectorAll("[data-vscode-schema]");
-        for(let i=0;i<nodes.length;i++) {
-            let node = nodes[i];
-            let schema =node.getAttribute('data-vscode-schema');
-            let host="/";
-            if (schema) {
-                let html=(`<a href="vscode://file${host}${schema}" 
-                target="_blank" class="vscode-schema-link"><svg viewBox="64 64 896 896" focusable="false" data-icon="codepen-circle" 
-                width="1em" height="1em" fill="currentColor" aria-hidden="true">
-                <path d="M488.1 414.7V303.4L300.9 428l83.6 55.8zm254.1 137.7v-79.8l-59.8 39.9zM512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm278 533c0 1.1-.1 2.1-.2 3.1 0 .4-.1.7-.2 1a14.16 14.16 0 01-.8 3.2c-.2.6-.4 1.2-.6 1.7-.2.4-.4.8-.5 1.2-.3.5-.5 1.1-.8 1.6-.2.4-.4.7-.7 1.1-.3.5-.7 1-1 1.5-.3.4-.5.7-.8 1-.4.4-.8.9-1.2 1.3-.3.3-.6.6-1 .9-.4.4-.9.8-1.4 1.1-.4.3-.7.6-1.1.8-.1.1-.3.2-.4.3L525.2 786c-4 2.7-8.6 4-13.2 4-4.7 0-9.3-1.4-13.3-4L244.6 616.9c-.1-.1-.3-.2-.4-.3l-1.1-.8c-.5-.4-.9-.7-1.3-1.1-.3-.3-.6-.6-1-.9-.4-.4-.8-.8-1.2-1.3a7 7 0 01-.8-1c-.4-.5-.7-1-1-1.5-.2-.4-.5-.7-.7-1.1-.3-.5-.6-1.1-.8-1.6-.2-.4-.4-.8-.5-1.2-.2-.6-.4-1.2-.6-1.7-.1-.4-.3-.8-.4-1.2-.2-.7-.3-1.3-.4-2-.1-.3-.1-.7-.2-1-.1-1-.2-2.1-.2-3.1V427.9c0-1 .1-2.1.2-3.1.1-.3.1-.7.2-1a14.16 14.16 0 01.8-3.2c.2-.6.4-1.2.6-1.7.2-.4.4-.8.5-1.2.2-.5.5-1.1.8-1.6.2-.4.4-.7.7-1.1.6-.9 1.2-1.7 1.8-2.5.4-.4.8-.9 1.2-1.3.3-.3.6-.6 1-.9.4-.4.9-.8 1.3-1.1.4-.3.7-.6 1.1-.8.1-.1.3-.2.4-.3L498.7 239c8-5.3 18.5-5.3 26.5 0l254.1 169.1c.1.1.3.2.4.3l1.1.8 1.4 1.1c.3.3.6.6 1 .9.4.4.8.8 1.2 1.3.7.8 1.3 1.6 1.8 2.5.2.4.5.7.7 1.1.3.5.6 1 .8 1.6.2.4.4.8.5 1.2.2.6.4 1.2.6 1.7.1.4.3.8.4 1.2.2.7.3 1.3.4 2 .1.3.1.7.2 1 .1 1 .2 2.1.2 3.1V597zm-254.1 13.3v111.3L723.1 597l-83.6-55.8zM281.8 472.6v79.8l59.8-39.9zM512 456.1l-84.5 56.4 84.5 56.4 84.5-56.4zM723.1 428L535.9 303.4v111.3l103.6 69.1zM384.5 541.2L300.9 597l187.2 124.6V610.3l-103.6-69.1z">
-                </path></svg></a>`)
-                $(node).prepend(html)
-            }       
-        }
-        insert = true;
-}
-function removeNodes(){
-    $('.vscode-schema-link').remove();
-    insert = false``
-}
-
-let schemaMap = {
-
-}
+// 
 
 function handleLinkToVscode(){
     let firstNode = document.querySelectorAll("[data-vscode-schema]")[0];
     let schema =  firstNode ? firstNode.getAttribute('data-vscode-schema'):  '';
     // if ()
-    schema && window.chrome.storage.local.get().then(storage => {
-        let host = storage["vscode-open-host"] || "";
-        if (host[0] !== '/') {``
+    if (schema) { 
+        getSchema(schema).then(url => window.open(url))
+    }
+}
+function getSchema(schema) { 
+    return window.chrome.storage.local.get().then(storage => {
+        let hosts = storage["vscode-open-host"] || {};
+        let checkedHost = storage["vscode-open-check-rule"] || 'default'
+        let host = hosts[checkedHost]
+
+        if (host[0] !== '/') {
             host = "/"+host
         }
         let url = new URL(`vscode://file${host}${schema}`)
-        window.open(url)
+        return url
     })
 }
+
+function getHost() { 
+    return window.chrome.storage.local.get().then(storage => {
+        let hosts = storage["vscode-open-host"] || {};
+        let checkedHost = storage["vscode-open-check-rule"] || 'default'
+        let host = hosts[checkedHost]
+        
+        if (host[0] !== '/') {
+            host = "/"+host
+        }
+        return `vscode://file${host}`
+    })
+}
+
+function getSchemaList() { 
+    let list = [];
+    let nodes = document.querySelectorAll("[data-vscode-schema]");
+        for(let i=0;i<nodes.length;i++) {
+            let node = nodes[i];
+            let schema = node.getAttribute('data-vscode-schema');
+            list.push(schema)
+        }
+    return list;
+}
+
+
+// helper图标
+window.chrome.storage.local.get().then(storage => {
+    let checked = storage["vscode-open-switch"] || "no";
+    if (checked === 'yes') { 
+        insertHelperIcon();
+    }
+})
+// 页面注入helper 图标;
+function insertHelperIcon() { 
+    if ($('#vscode-schema-helper-icon').length) { 
+        return;
+    }
+    // https://img0.baidu.com/it/u=1357890151,3876531850&fm=253&fmt=auto&app=138&f=JPEG
+    let html=(`<a id="vscode-schema-helper-icon" style="position: fixed;bottom:50%;left:0%;z-index: 9999;cursor: pointer;"><img src="https://git.souban.io/uploads/-/system/user/avatar/180/avatar.png" style="width: 40px;height: 40px;"></a>`)
+    $('html').prepend(html);
+    $('#vscode-schema-helper-icon').click(function () {
+        if ($('#vscode-schema-helper-icon-list').length) {
+            $('#vscode-schema-helper-icon-list').remove();
+        } else {
+            getHost().then(host => { 
+                const schemaLists = getSchemaList();
+                let html = '';
+                for (let i = 0; i < schemaLists.length; i++) {
+                    // let item = schemaLists[i].split('/')
+                    // // 最后一项
+                    // let fileName = item[item.length - 1].split(':')[0];
+                    let fileName = schemaLists[i].split(':')[0]
+                    html+= getTplString(fileName, host+schemaLists[i])
+                };
+                $(this).prepend(`<div style="position: absolute;left: 45px;" id="vscode-schema-helper-icon-list">${html}</div>`)
+            })
+    
+            
+        }
+    })
+}
+
+function removeHelperIcon() { 
+    $('#vscode-schema-helper-icon').remove()
+}
+ 
+function getTplString(name, url) {
+    return `<div style="width: auto;height: 32px;margin-bottom: 4px;text-align: center;font-size: 14px;line-height: 32px;background:rgb(22,119,255);border-radius:6px;white-space:nowrap;">
+                <a href="${url}" target="_blank" style="color: #fff;">${name}</a>
+            </div>`;
+    
+}
+// 
